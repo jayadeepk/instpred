@@ -23,7 +23,7 @@ MRCNN:
   DILATION: 1  # default 2
   CONV_INIT: MSRAFill  # default GaussianFill
 TEST:
-  WEIGHTS: /private/home/paulineluc/code/oss/predicting_future_instance_segm/models/maskrcnn/ResNet-50-FPN-coco_init_e2e_cityscapes_finetuned/20170927_coco_init_e2e_mask_rcnn_R-50-FPN.yaml.05_42_40.xVPWx2L5/model_final.pkl
+  WEIGHTS: /storage/projects/instpred/models/maskrcnn/ResNet-50-FPN-coco_init_e2e_cityscapes_finetuned/20170927_coco_init_e2e_mask_rcnn_R-50-FPN.yaml.05_42_40.xVPWx2L5/model_final.pkl
   SCALE: 1024
   MAX_SIZE: 2048
   NMS: 0.5
