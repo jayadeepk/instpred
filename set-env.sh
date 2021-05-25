@@ -1,0 +1,7 @@
+export CITYSCAPES_IMAGES=/storage/data/leftImg8bit_sequence_trainvaltest/leftImg8bit_sequence
+export CITYSCAPES_GT_ROOT=/storage/data/gtFine_trainvaltest
+export CITYSCAPES_JSON_ANNOTATIONS=/storage/projects/instpred/coco_style_annotations
+export CITYSCAPES_SCRIPTS=/storage/projects/cityscapesScripts
+export DETECTRON=/storage/detectron
+export COCOAPI=/storage/cocoapi
+export OUTPUTS_DIR=/storage/projects/instpred/logs-cityscapesScripts
