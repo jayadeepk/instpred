@@ -17,7 +17,7 @@ import os
 import time
 import numpy as np
 from PIL import Image
-import cPickle as pickle
+import _pickle as pickle
 from collections import namedtuple, defaultdict
 import json
 
@@ -120,7 +120,7 @@ class CityscapesDatasetAndFeatures(Dataset):
         c2_utils.import_detectron_ops()
 
         workspace.GlobalInit(['caffe2', '--caffe2_log_level=0'])
-        dset = b'cityscapes_fine_instanceonly_seg_sequences_' + self.split
+        dset = 'cityscapes_fine_instanceonly_seg_sequences_' + self.split
         if not cfg.is_immutable(): # just in case feature extractor has not been set up already
             # Preparing where to load data from and how using coco api
 

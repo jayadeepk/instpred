@@ -22,7 +22,7 @@ from autoregressive_training import (
 # ------------------------------------------------------------------------------
 # Helper functions
 def squeeze_feature_maps(features):
-    for k, v in features.iteritems():
+    for k, v in features.items():
         features[k] = v.squeeze(0)
         assert features[k].dim() == 3, 'No batch mode allowed in this evaluation script'
     return features

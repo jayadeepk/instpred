@@ -132,7 +132,7 @@ def resetValProgressMultiscale(opt, val_loader, stats):
     val_loader.reset()
     # Stats
     for t in range(opt['n_target_frames']):
-        if not stats.has_key('t+%d' % (t+1)): stats['t+%d' % (t+1)] = {}
+        if ('t+%d' % (t+1)) not in stats: stats['t+%d' % (t+1)] = {}
         stats['t+%d' % (t+1)].update(resetValStatsSingleFrameMultiscale(opt))
     stats['val_ae_loss_values'] = []
     return totalValLoss, ctValIt

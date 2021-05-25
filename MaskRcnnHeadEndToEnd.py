@@ -206,7 +206,7 @@ class MaskRcnnHead(object):
         timers = self.timers
         # Format the inputs to the mask rcnn head
         features = {}
-        for k, v in inputFeatures.iteritems():
+        for k, v in inputFeatures.items():
             assert v.dim() == 3, 'Batch mode not allowed'
             features[k] = np.expand_dims(v.data.cpu().numpy(), axis=0)
 

@@ -37,10 +37,10 @@ conf_threshold = 0.5 # threshold on confidence for conversion to semantic segm
 
 from environment_configuration import ROOT_SAVE_HEAVY_RESULTS
 # Inputs
-root_dir = b'%s/%s' % (ROOT_SAVE_HEAVY_RESULTS, os.environ['PREDICTIONS_PATH'])
+root_dir = '%s/%s' % (ROOT_SAVE_HEAVY_RESULTS, os.environ['PREDICTIONS_PATH'])
 
 # Outputs
-output_dir = b'%s/%s' % (ROOT_SAVE_HEAVY_RESULTS, os.environ['EVALUATION_RESULTS'])
+output_dir = '%s/%s' % (ROOT_SAVE_HEAVY_RESULTS, os.environ['EVALUATION_RESULTS'])
 # using these variables because of the cityscapes evaluation script
 
 # Target semantic segmentations
@@ -57,7 +57,7 @@ logger.info('output dir : %s' % output_dir)
 
 # Load dataset for a few useful functions
 cityscapes_val = CityscapesDatasetAndFeatures(
-    split = b'val',
+    split = 'val',
     frame_ss = None, # note : not used, but value needed
     nSeq = 1,
     features = ['RGBs'],
@@ -146,7 +146,7 @@ def evaluate_instance_segmentations(
     cityscapes_eval.main()
 
 def evaluate_instances_converted_to_semantic_segmentation(dataset, root_dir, target_segm_dir, output_dir, split='val'):
-    import scipy.misc
+    import imageio
     logger.info('Performance computed using the dataset groundtruth')
     labels, classes = dataset.get_classes(task = 'instance_segmentation')
     maskrcnn_to_mocity = [label.trainId for label in labels]
@@ -174,13 +174,13 @@ def evaluate_instances_converted_to_semantic_segmentation(dataset, root_dir, tar
             save_output = '_'.join((frameID, 'prediction'))
             filename = os.path.join(output_dir, 'outputs_semantic_segmentation', '%s.png' % save_output)
             if not os.path.exists(os.path.dirname(filename)):os.mkdir(os.path.dirname(filename))
-            scipy.misc.imsave(filename, segm)
+            imageio.imwrite(filename, segm)
             logger.info('Saved output semantic segm to %s' % filename)
 
             if split == 'test':
                 filenamesub = os.path.join(output_dir, 'semantic_segmentation_for_submission', '%s.png' % save_output)
                 if not os.path.exists(os.path.dirname(filenamesub)):os.mkdir(os.path.dirname(filenamesub))
-                scipy.misc.imsave(filenamesub, segm_submission)
+                imageio.imwrite(filenamesub, segm_submission)
                 print('Saved output semantic segm for submission to %s' % filenamesub)
             else:
                 gt = load_groundtruth(groundtruth_root, res)
@@ -189,13 +189,13 @@ def evaluate_instances_converted_to_semantic_segmentation(dataset, root_dir, tar
                 save_gt = '_'.join((frameID, 'gtconvertedmocity'))
                 gt_fn = os.path.join(output_dir, 'gt_semantic_segmentation_converted_to_mocity_labels', '%s.png' % save_gt)
                 if not os.path.exists(os.path.dirname(gt_fn)):os.mkdir(os.path.dirname(gt_fn))
-                scipy.misc.imsave(gt_fn, gt)
+                imageio.imwrite(gt_fn, gt)
                 logger.info('Saved gt semantic segm to %s' % gt_fn)
 
 
                 save_target = '_'.join((frameID, u'maskrcnntargetsemanticsegmentation'))
                 target_segm_filename = os.path.join(target_segm_dir , '%s.png' % save_target)
-                loaded_target_sem_segm = scipy.misc.imread(target_segm_filename)
+                loaded_target_sem_segm = imageio.imread(target_segm_filename)
 
                 conf_gt.add(torch.from_numpy(segm), torch.from_numpy(gt), reshape_spatial_map)
                 conf_segm.add(torch.from_numpy(segm), torch.from_numpy(loaded_target_sem_segm), reshape_spatial_map)

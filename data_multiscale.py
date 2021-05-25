@@ -51,6 +51,8 @@ class featurePredictionSampler(object):
             self.current += 1
             return inputs, targets, sample['seqIDs']
 
+    __next__ = next  # Python 3
+
     def __len__(self):
         return len(self.data_source)
 
