@@ -11,9 +11,13 @@ import os
 import pprint
 import copy
 import numpy as np
+from datetime import datetime
 from detectron.utils.io import save_object
 
 from mypython.logger import create_logger
+
+# Resume precompute from this iteration
+RESUME_IT = 1300
 
 #-------------------------------------------------------------------------------
 # Load config
@@ -49,7 +53,8 @@ valLoader = iter(valset)
 def precompute_maskrcnn_backbone_features(config, dataset, split):
     feat_type = config['feat_type']
     # assert that the dimensions are ok otherwise break
-    s, nI, nT = min(len(dataset), config['it']), config['n_input_frames'], config['n_target_frames']
+    s, nI, nT = min(len(dataset) - RESUME_IT, config['it']), config['n_input_frames'], config['n_target_frames']
+    assert(s > 0, "s is not greater than 0")
 
     # Automatically get feature dimensions
     sample_input, _, _ = dataset.next()
@@ -57,23 +62,26 @@ def precompute_maskrcnn_backbone_features(config, dataset, split):
     assert sample_features.dim() == 4, "Batch mode is expected"
     sz = sample_features.size()
     assert(sz[0] == 1, 'This function assumes batch mode, but a single example per batch')
-    c, h, w = sz[1]/nI, sz[2], sz[3]
+    c, h, w = sz[1]//nI, sz[2], sz[3]
     assert c == config['nb_features']
     dataset.reset()
     # Check that the dataset to compute will be under 100GB - floating point takes 4B - check
     assert s * (nI+nT) * c * h * w * 4 <= 1e11, \
         'The dataset to compute will take over 100 GB - aborting'
     # Initialize tensors
+
     seq_features = np.empty((s, (nI+nT), c, h, w), dtype = np.float32)
     seq_ids = ['' for _ in range(s)]
+    dataset.current = RESUME_IT
     for i, data in enumerate(dataset):
+        print(datetime.now().strftime("%Y-%m-%d %H:%M:%S : ") + str(i))
         inputs, targets, _ = data
-        correspondingSample = dataset.data_source[i]
+        correspondingSample = dataset.data_source.dataset.dataset.im_list[i + RESUME_IT]['image']
         # insert in the dataset
         inp_feat = inputs[feat_type].view((nI, c, h, w)).numpy().astype(np.float32)
         tar_feat = targets[feat_type].view((nT, c, h, w)).numpy().astype(np.float32)
         seq_features[i] = np.concatenate((inp_feat, tar_feat), 0)
-        seq_ids[i] = correspondingSample[u'annID'][0]
+        seq_ids[i] = correspondingSample
         if i >= (config['it']-1) :
             break
 
@@ -103,5 +111,5 @@ cfg_val['it'] = opt['nvalIt']
 print(cfg_train)
 print(cfg_val)
 
-precompute_maskrcnn_backbone_features(cfg_val, valLoader, 'val')
+# precompute_maskrcnn_backbone_features(cfg_val, valLoader, 'val')
 precompute_maskrcnn_backbone_features(cfg_train, trainLoader, 'train')
