@@ -11,13 +11,14 @@ import os
 import pprint
 import copy
 import numpy as np
-from datetime import datetime
+import pickle
 from detectron.utils.io import save_object
 
 from mypython.logger import create_logger
+from npy_append_array import NpyAppendArray
 
-# Resume precompute from this iteration
-RESUME_IT = 1300
+# Save results every SAVE_IT iterations
+SAVE_IT = 50
 
 #-------------------------------------------------------------------------------
 # Load config
@@ -47,14 +48,24 @@ logger.info(pprint.pprint(valsetConfig))
 valset = load_cityscapes_val(valsetConfig)
 valLoader = iter(valset)
 
+def pickle_load(path):
+    if not os.path.isfile(path):
+        return []
+    with open(path, 'rb') as f:
+        a = pickle.load(f)['sequence_ids']
+    return a
+
+def pickle_save(seq_ids, path):
+    with open(path, 'wb') as f:
+        pickle.dump(dict(sequence_ids=seq_ids), f, protocol=2)
+
 #-------------------------------------------------------------------------------
 # Precompute features
 
 def precompute_maskrcnn_backbone_features(config, dataset, split):
     feat_type = config['feat_type']
     # assert that the dimensions are ok otherwise break
-    s, nI, nT = min(len(dataset) - RESUME_IT, config['it']), config['n_input_frames'], config['n_target_frames']
-    assert(s > 0, "s is not greater than 0")
+    nI, nT = config['n_input_frames'], config['n_target_frames']
 
     # Automatically get feature dimensions
     sample_input, _, _ = dataset.next()
@@ -66,36 +77,52 @@ def precompute_maskrcnn_backbone_features(config, dataset, split):
     assert c == config['nb_features']
     dataset.reset()
     # Check that the dataset to compute will be under 100GB - floating point takes 4B - check
-    assert s * (nI+nT) * c * h * w * 4 <= 1e11, \
+    assert len(dataset) * (nI+nT) * c * h * w * 4 <= 1e11, \
         'The dataset to compute will take over 100 GB - aborting'
+
+    filename = os.path.join(opt['save'] , '__'.join(
+        (split, feat_type, 'nSeq%d'%(nI+nT), 'fr%d'%config['frame_ss'])))
+    logger.info('Results folder: %s'%filename)
+    if os.path.isfile(filename + '__features.npy'):
+        arr = np.load(filename + '__features.npy', mmap_mode='r')
+        logger.info('Loading previous results. Shape: ' + str(arr.shape))
+        # Get iteration number to resume from
+        resume_it = len(arr)
+        del arr
+    else:
+        resume_it = 0
+    # Open output numpy file in append mode
+    output_numpy_file = NpyAppendArray(filename + '__features.npy')
+
     # Initialize tensors
 
-    seq_features = np.empty((s, (nI+nT), c, h, w), dtype = np.float32)
-    seq_ids = ['' for _ in range(s)]
-    dataset.current = RESUME_IT
+    seq_features = np.empty((0, (nI+nT), c, h, w), dtype = np.float32)
+    seq_ids = pickle_load(filename + '__ids.pkl')
+    dataset.current = resume_it
     for i, data in enumerate(dataset):
-        print(datetime.now().strftime("%Y-%m-%d %H:%M:%S : ") + str(i))
+        logger.info(i + resume_it)
         inputs, targets, _ = data
-        correspondingSample = dataset.data_source.dataset.dataset.im_list[i + RESUME_IT]['image']
+        correspondingSample = dataset.data_source.dataset.dataset.im_list[i + resume_it]['image']
         # insert in the dataset
+        seq_ids.append(correspondingSample)
         inp_feat = inputs[feat_type].view((nI, c, h, w)).numpy().astype(np.float32)
         tar_feat = targets[feat_type].view((nT, c, h, w)).numpy().astype(np.float32)
-        seq_features[i] = np.concatenate((inp_feat, tar_feat), 0)
-        seq_ids[i] = correspondingSample
+        feat = np.concatenate((inp_feat, tar_feat), axis=0)
+        feat = np.expand_dims(feat, axis=0)
+        seq_features = np.append(seq_features, feat, axis=0)
+        # Append results every SAVE_IT iterations, because keeping
+        # large numpy files in memory might invoke Out-Of-Memory Killer.
+        if (i + 1) % SAVE_IT == 0:
+            pickle_save(seq_ids, filename + '__ids.pkl')
+            output_numpy_file.append(seq_features)
+            seq_features = np.empty((0, (nI+nT), c, h, w), dtype = np.float32)
         if i >= (config['it']-1) :
             break
-
-    # save the precomputed features
-    fr = config['frame_ss']
-    filename = os.path.join(opt['save'] , '__'.join((split, feat_type, 'nSeq%d'%(nI+nT), 'fr%d'%fr)))
+    if seq_features.size:
+        output_numpy_file.append(seq_features)
+    pickle_save(seq_ids, filename + '__ids.pkl')
     logger.info('Precomputed features saved to : %s'%filename)
-    save_object(
-        dict(
-            sequence_ids = seq_ids
-        ),
-        filename + '__ids.pkl'
-    )
-    np.save(filename + '__features.npy', seq_features)
+
 
 assert opt['trainbatchsize'] == opt['valbatchsize'] == 1
 cfg_train = {

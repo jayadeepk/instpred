@@ -137,7 +137,7 @@ ln -s $CITYSCAPES_GT_ROOT $DETECTRON/detectron/datasets/data/cityscapes_sequence
 6/ Finally install the following remaining necessary packages:
 ```
 conda install opencv
-pip install visdom pyyaml torchnet
+pip install visdom pyyaml torchnet npy-append-array
 ```
 <!-- todo check what we can get rid of -->
 
