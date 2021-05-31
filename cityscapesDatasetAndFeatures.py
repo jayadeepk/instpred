@@ -181,7 +181,7 @@ class CityscapesDatasetAndFeatures(Dataset):
                 ids_path = '__'.join((self.split, feat, 'nSeq%d'%self.nSeq, 'fr%d'%self.frame_ss, 'ids.pkl'))
                 ids_path = os.path.join(self.precompute_features_dir, ids_path)
                 assert os.path.exists(ids_path)
-                with open(ids_path, 'r') as f:
+                with open(ids_path, 'rb') as f:
                     precomputed_features_index[feat] = pickle.load(f)
                     precomputed_features_index[feat] = precomputed_features_index[feat]['sequence_ids']
                 # Then load the features
@@ -190,7 +190,7 @@ class CityscapesDatasetAndFeatures(Dataset):
                 assert os.path.exists(feat_path)
 
                 logger.info('Loading precomputed features for %s' % feat)
-                precomputed_features[feat] = np.load(feat_path)
+                precomputed_features[feat] = np.load(feat_path, mmap_mode='r')
 
         return precomputed_features_index, precomputed_features
 

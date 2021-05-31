@@ -91,6 +91,8 @@ These precomputed features allow efficient training of the F2F5 model, with:
 python train.py -lr 0.01 -trit 743 -trbs 4 --save train/1_f2f5_nT1 \
   -nEps 10 -tsl fpn_res5_2_sum  --nb_scales 1 -nTR 1 -nEp 80 --create_subdir True
 # Note: --create_subdir True makes sure that results and logs are stored in a new subdir each time the script is run.
+
+# If you want to resume training, use --resume train/1_f2f5_nT1 option instead of --create_subdir True
 ```
 
 Next, you can use the obtained model as initialization to train the other subnetworks of F2F, i.e. F2F4, F2F3 and F2F2.

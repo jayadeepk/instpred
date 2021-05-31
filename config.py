@@ -122,7 +122,7 @@ class futureInstancePredictionInputParser(object):
                 if opt['FfpnLevels'] == 4:
                     opt['features'] = opt['features'] + [u'fpn_res2_2_sum']
             else:
-                opt['features'] = [unicode(opt['train_single_level'], 'utf-8')]
+                opt['features'] = [str(opt['train_single_level'])]
 
 
             def check_no_unkown_loss(losses_options, possible_losses):
@@ -157,7 +157,7 @@ class futureInstancePredictionInputParser(object):
             assert os.path.isfile(checkpoint_path),\
                 "=> no checkpoint found at %s" % (checkpoint_path)
             checkpoint = torch.load(checkpoint_path)
-            with open(checkpoint['opt_path'], 'r') as f: opt = pickle.load(f)
+            with open(checkpoint['opt_path'], 'rb') as f: opt = pickle.load(f)
             print("=> loaded checkpoint '%s' (epoch %d)" % (checkpoint_path, checkpoint['epoch']))
 
             return opt, checkpoint
